@@ -11,6 +11,7 @@ import org.springframework.web.socket.handler.BinaryWebSocketHandler;
 import java.io.ByteArrayOutputStream;
 import java.nio.ByteBuffer;
 import java.util.*;
+import java.util.concurrent.ConcurrentHashMap;
 
 @Component
 public class SocketTextHandler extends BinaryWebSocketHandler {
@@ -19,13 +20,13 @@ public class SocketTextHandler extends BinaryWebSocketHandler {
     private final Map<String, Document> documents = new HashMap<>();
 
     // document-id + sender-id -> Sync State
-    private final Map<String, SyncState> syncStates = new HashMap<>();
+    private final Map<String, SyncState> syncStates = new ConcurrentHashMap<>();
 
     // document -> sender-ids
-    private final Map<String, Set<String>> clientSubscriptions = new HashMap<>();
+    private final Map<String, Set<String>> clientSubscriptions = new ConcurrentHashMap<>();
 
     // sender-id -> -> session object
-    private final Map<String, WebSocketSession> clientSessions = new HashMap<>();
+    private final Map<String, WebSocketSession> clientSessions = new ConcurrentHashMap<>();
 
     @Override
     protected void handleBinaryMessage(WebSocketSession session, BinaryMessage message) throws Exception {
