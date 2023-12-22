@@ -81,18 +81,25 @@ public class SocketTextHandler extends BinaryWebSocketHandler {
                 Optional<byte[]> generatedSyncMessageOp = document.generateSyncMessage(syncState);
 
                 // Sync with peer
+
+                CBORObject respObj = CBORObject.NewMap();
+                respObj.Add("type", "sync");
+                respObj.Add("senderId", "storage-server-sync-automerge-org");
+
                 if (generatedSyncMessageOp.isPresent()) {
-                    CBORObject respObj = CBORObject.NewMap();
-                    respObj.Add("type", "sync");
-                    respObj.Add("senderId", "storage-server-sync-automerge-org");
+                    // If there are sync changes, send it
                     respObj.Add("data", generatedSyncMessageOp.get());
-                    respObj.Add("targetId", senderId);
-                    respObj.Add("documentId", documentId);
-                    ByteArrayOutputStream output = new ByteArrayOutputStream();
-                    respObj.WriteTo(output);
-                    output.flush();
-                    session.sendMessage(new BinaryMessage(output.toByteArray()));
+                } else {
+                    // If there is no sync changes, Send same data object the client has sent
+                    respObj.Add("data", data);
                 }
+
+                respObj.Add("targetId", senderId);
+                respObj.Add("documentId", documentId);
+                ByteArrayOutputStream output = new ByteArrayOutputStream();
+                respObj.WriteTo(output);
+                output.flush();
+                session.sendMessage(new BinaryMessage(output.toByteArray()));
 
                 if (!clientSubscriptions.containsKey(documentId)) {
                     clientSubscriptions.put(documentId, new HashSet<>());
@@ -117,13 +124,13 @@ public class SocketTextHandler extends BinaryWebSocketHandler {
 
                     WebSocketSession syncSenderSession = clientSessions.get(syncSenderId);
                     if (generatedSyncMessageOp.isPresent() && syncSenderSession.isOpen()) {
-                        CBORObject respObj = CBORObject.NewMap();
+                        respObj = CBORObject.NewMap();
                         respObj.Add("type", "sync");
                         respObj.Add("senderId", "storage-server-sync-automerge-org");
                         respObj.Add("data", generatedSyncMessageOp.get());
                         respObj.Add("targetId", syncSenderId);
                         respObj.Add("documentId", documentId);
-                        ByteArrayOutputStream output = new ByteArrayOutputStream();
+                        output = new ByteArrayOutputStream();
                         respObj.WriteTo(output);
                         output.flush();
                         syncSenderSession.sendMessage(new BinaryMessage(output.toByteArray()));
